@@ -39,6 +39,11 @@ echo "Work dir: $work"
 
 codex_installed=no
 cleanup() {
+  # Claude still creates an empty memory/ folder per fixture under
+  # ~/.claude/projects; remove this run's folders, and only while they are empty.
+  local tag; tag="$(basename "$work" | tr '.' '-')"
+  find "$HOME/.claude/projects" -maxdepth 1 -type d -name "*${tag}-claude-fixtures-*" \
+    -exec find {} -depth -type d -empty -delete \; 2>/dev/null || true
   if [[ "$codex_installed" == yes ]]; then
     codex plugin remove "$plugin@$marketplace" >/dev/null 2>&1 || true
     codex plugin marketplace remove "$marketplace" >/dev/null 2>&1 || true
