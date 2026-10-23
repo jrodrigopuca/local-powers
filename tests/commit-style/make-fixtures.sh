@@ -65,6 +65,10 @@ git add README.md
 printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
 echo docs > EXPECTED_TYPE
 
+# nothing at all: say there is nothing to commit, propose no header
+base no-changes
+echo none > EXPECTED_TYPE
+
 # Snapshot the staged set so check.sh can prove the skill only proposed.
 for d in "$out"/*/; do
   git -C "$d" diff --staged --name-only > "$d/.git/STAGED_SNAPSHOT"

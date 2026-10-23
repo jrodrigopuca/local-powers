@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs a plugin's test cases through Claude Code and/or Codex.
 #
-# Usage: tests/run.sh <plugin> [claude|codex|both]   (default: both)
+# Usage: tests/run.sh <plugin> [claude|codex|both] [case]
+#   cli defaults to both; case (a fixture name) runs only that case.
 #
 # Each plugin's test folder, tests/<plugin>/, provides:
 #   make-fixtures.sh <dir>        builds one throwaway git repo per case
@@ -14,6 +15,7 @@ set -euo pipefail
 
 plugin="${1:?usage: tests/run.sh <plugin> [claude|codex|both]}"
 clis="${2:-both}"
+only="${3:-}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 suite="$root/tests/$plugin"
 plugin_dir="$root/plugins/$plugin"
@@ -60,6 +62,10 @@ for cli in "${clis[@]}"; do
 
   # Fresh fixtures per CLI, so one CLI can't affect the other's cases.
   "$suite/make-fixtures.sh" "$work/$cli/fixtures" >/dev/null
+  if [[ -n "$only" ]]; then
+    [[ -d "$work/$cli/fixtures/$only" ]] || { echo "unknown case: $only"; exit 2; }
+    find "$work/$cli/fixtures" -mindepth 1 -maxdepth 1 ! -name "$only" -exec rm -rf {} +
+  fi
   mkdir -p "$work/$cli/answers"
 
   pids=()

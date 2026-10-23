@@ -13,15 +13,22 @@ expected="$(cat "$fixture/EXPECTED_TYPE")"
 types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
 
 # Headers = lines that start with a type (code-block fences are skipped).
+# Wording may differ between CLIs and runs; only the convention is checked.
 headers="$(grep -E "^(${types})(\(|!|:)" "$answer" || true)"
-[[ -n "$headers" ]] || { echo "FAIL: no header found in answer"; exit 1; }
-
 status=0
-count="$(wc -l <<< "$headers" | tr -d ' ')"
-[[ "$count" == 1 ]] || { echo "FAIL: $count headers proposed (expected exactly 1)"; status=1; }
-while IFS= read -r h; do
-  "$here/check-header.sh" "$h" "$expected" || status=1
-done <<< "$headers"
+
+if [[ "$expected" == none ]]; then
+  # Nothing to commit: the answer must say so instead of inventing a message.
+  [[ -z "$headers" ]] || { echo "FAIL: proposed a header with nothing to commit"; status=1; }
+  grep -q '[^[:space:]]' "$answer" || { echo "FAIL: empty answer"; status=1; }
+else
+  [[ -n "$headers" ]] || { echo "FAIL: no header found in answer"; exit 1; }
+  count="$(wc -l <<< "$headers" | tr -d ' ')"
+  [[ "$count" == 1 ]] || { echo "FAIL: $count headers proposed (expected exactly 1)"; status=1; }
+  while IFS= read -r h; do
+    "$here/check-header.sh" "$h" "$expected" || status=1
+  done <<< "$headers"
+fi
 
 # Staging and committing are the user's call: no such command in the answer.
 if grep -nE 'git (add|restore|reset|commit|stash|rm)\b' "$answer"; then
