@@ -1,6 +1,6 @@
 # ADR-0001: Each plugin ships both manifests side by side, with no build step
 
-- Status: accepted
+- Status: superseded by [ADR-0002](0002-claude-only.md)
 - Date: 2026-10-23
 - Drivers:
   - Skills (`skills/<name>/SKILL.md`) are read as-is by Claude Code and by Codex/ChatGPT;

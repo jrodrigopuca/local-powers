@@ -1,9 +1,0 @@
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "commit-style",
-  "version": "0.2.0",
-  "description": "Propose one-line Conventional Commits messages from staged changes",
-  "author": { "name": "jarp", "url": "https://github.com/jrodrigopuca" },
-  "repository": "https://github.com/jrodrigopuca/local-powers",
-  "license": "MIT"
-}

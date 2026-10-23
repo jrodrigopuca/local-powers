@@ -15,24 +15,17 @@ so it never runs or suggests `git add`, `git restore` or `git commit`.
 
 ## Install
 
-Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add jrodrigopuca/local-powers
 /plugin install commit-style@local-powers
 ```
 
-Codex:
-
-```
-codex plugin marketplace add jrodrigopuca/local-powers
-```
-
 ## Use
 
 Ask for a commit message ("propose a commit message for what's staged"), or run
-the skill directly: `/commit-style:msg` in Claude Code, `$commit-style:msg` in the
-Codex CLI.
+the skill directly with `/commit-style:msg`.
 
 ## Tests
 

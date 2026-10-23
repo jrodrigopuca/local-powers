@@ -1,10 +1,9 @@
 # local-powers
 
-Plugins for **Claude Code** and **Codex / ChatGPT**, from one source.
+Plugins for **Claude Code**.
 
-Each plugin is a folder of portable skills (`skills/<name>/SKILL.md`) that both
-assistants read as-is, plus one small manifest per platform. No build step: this
-repository is itself the marketplace both CLIs install from.
+Each plugin is a folder with its manifest and its skills; this repository is
+itself the marketplace Claude Code installs from. No build step.
 
 ## Plugins
 
@@ -14,8 +13,6 @@ repository is itself the marketplace both CLIs install from.
 
 ## Install
 
-**Claude Code**
-
 ```
 /plugin marketplace add jrodrigopuca/local-powers
 /plugin install commit-style@local-powers
@@ -23,53 +20,44 @@ repository is itself the marketplace both CLIs install from.
 
 From your shell: `claude plugin install commit-style --marketplace jrodrigopuca/local-powers`.
 
-**Codex** (CLI, and Codex in the ChatGPT desktop app)
-
-```
-codex plugin marketplace add jrodrigopuca/local-powers
-codex plugin add commit-style@local-powers
-```
-
 Then just ask, e.g. *"propose a commit message for my changes"*, or invoke a skill
-directly as `/<plugin>:<skill>` in Claude Code and `$<plugin>:<skill>` in the Codex
-CLI (`/commit-style:msg`, `$commit-style:msg`). The skill runs on
-whatever model your session is using; it adds no model or service of its own.
+directly as `/<plugin>:<skill>` (`/commit-style:msg`). The skill runs on whatever
+model your session is using; it adds no model or service of its own.
 
-> Not yet listed in Anthropic's or OpenAI's public plugin directories: install from
-> this repository as shown above.
+Third-party marketplaces don't auto-update by default: run
+`claude plugin update <plugin>@local-powers` to get a new version.
+
+> Claude Code only. Codex/ChatGPT support existed and was removed
+> ([ADR-0002](docs/adr/0002-claude-only.md)), which also explains how to bring it back.
 
 ## Repository layout
 
 ```
-.claude-plugin/marketplace.json     the catalog (read by Claude Code and Codex)
+.claude-plugin/marketplace.json     the catalog
 plugins/<plugin>/
-├── .claude-plugin/plugin.json      manifest for Claude Code
-├── plugin.json                     manifest for Codex/ChatGPT (Agent Plugins format)
+├── .claude-plugin/plugin.json      the manifest
 ├── README.md
-└── skills/<skill>/SKILL.md         the part both platforms share
+└── skills/<skill>/SKILL.md         plus agents/, hooks/… when a plugin needs them
 tests/
-├── run.sh                          runs a plugin's cases through both CLIs
+├── run.sh                          runs a plugin's cases through Claude Code
 └── <plugin>/                       that plugin's test cases
+scripts/check.sh                    structural checks (no model calls)
+.githooks/pre-push                  runs scripts/check.sh before every push
 docs/adr/                           architecture decisions
 ```
 
-Why two manifests side by side instead of a build step:
-[ADR-0001](docs/adr/0001-dual-manifest-plugins.md).
-
 ## Adding a plugin
 
-1. Create `plugins/<name>/` with `skills/`, a `README.md`, and both manifests.
-   `name`, `version` and `description` must match in the two manifests.
+1. Create `plugins/<name>/` with `.claude-plugin/plugin.json` (its `name` equal
+   to the folder name), a `README.md`, and its components — skills, agents,
+   hooks, commands: any Claude Code component is fine.
 2. Add an entry to `.claude-plugin/marketplace.json`.
 3. Keep anything that must hold every time in `SKILL.md` itself: models don't
    always open files under `references/`.
 4. Avoid "claude" in plugin names: `claude plugin validate` rejects or warns on it.
-5. Check it: `claude plugin validate --strict plugins/<name>`.
-6. Add tests under `tests/<name>/` (below) — never inside the plugin folder,
+5. Add tests under `tests/<name>/` (below) — never inside the plugin folder,
    or they get installed with it.
-
-Only skills and remote MCP servers work on both platforms. Agents, hooks and
-commands are Claude Code only (see ADR-0001).
+6. Run `scripts/check.sh`.
 
 ## Testing
 
@@ -93,25 +81,23 @@ test folder provides:
 | `make-fixtures.sh <dir>` | builds one throwaway git repo per case; expectations go in each repo's `.git/expected/`, out of the model's sight |
 | `prompt.txt` | what is asked in every case |
 | `check.sh <fixture> <answer>` | exits 0 when the answer passes |
+| `selftest.sh` | optional: proves `check.sh` accepts and rejects hand-written answers (run by `scripts/check.sh`) |
 
 Run them:
 
 ```
-tests/run.sh commit-style                    # both CLIs, every case
-tests/run.sh commit-style codex              # one CLI
-tests/run.sh commit-style both no-changes    # one case
+tests/run.sh commit-style               # every case
+tests/run.sh commit-style no-changes    # one case
 ```
 
-- **Models:** small ones by default (`haiku`, `gpt-6-luna`) to keep runs cheap.
-  Override with `CLAUDE_MODEL=…` / `CODEX_MODEL=…`; `default` uses the CLI's
-  configured model. Run once with `default` before a release: a pass on a small
-  model does not guarantee one on a large model.
-- **Cost:** each case is a real model call per CLI. The end of each CLI's run
-  reports the model and the tokens used (and the cost, for Claude).
-- **Isolation:** Claude runs without your settings, skills, agents, MCP servers
-  or session history. Codex runs with your own `~/.codex` (skills and agents
-  included) and installs the plugin from this repository for the run, removing
-  it on exit.
+- **Model:** `haiku` by default to keep runs cheap. Override with
+  `CLAUDE_MODEL=…`; `default` uses your configured model. Run once with
+  `default` before a release: a pass on a small model does not guarantee one on
+  a large model.
+- **Cost:** each case is a real model call. The end of the run reports the
+  model, the tokens and the cost.
+- **Isolation:** tests run without your settings, skills, agents, MCP servers
+  or session history, so only the plugin under test is loaded.
 
 ## License
 

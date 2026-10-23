@@ -3,11 +3,11 @@
 # Usage: scripts/check.sh
 #
 #   1. JSON files parse
-#   2. Each plugin's two manifests agree (name, version, description), the
-#      portable one declares the Agent Plugins $schema, and the folder is
-#      named after the plugin (ADR-0001)
+#   2. Each plugin has .claude-plugin/plugin.json, named after its folder
+#      (Claude Code only: ADR-0002)
 #   3. Every plugin is listed in the marketplace, with the right source
 #   4. Every skill has a SKILL.md whose frontmatter name matches its folder
+#      and that has a description
 #   5. No tests inside plugin folders (they would be installed with the plugin)
 #   6. Shell scripts parse
 #   7. claude plugin validate --strict, when the claude CLI is installed
@@ -26,7 +26,6 @@ import json, re, sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 errors = []
 
 def load(path):
@@ -44,15 +43,8 @@ for plugin in sorted((root / "plugins").iterdir()):
         continue
     name = plugin.name
     claude = load(plugin / ".claude-plugin/plugin.json")
-    portable = load(plugin / "plugin.json")
-    if claude is None or portable is None:
+    if claude is None:
         continue
-    for key in ("name", "version", "description"):
-        if claude.get(key) != portable.get(key):
-            errors.append(f"{name}: '{key}' differs between manifests "
-                          f"({claude.get(key)!r} vs {portable.get(key)!r})")
-    if portable.get("$schema") != SCHEMA:
-        errors.append(f"{name}: plugin.json lacks the Agent Plugins $schema")
     if claude.get("name") != name:
         errors.append(f"{name}: folder name differs from manifest name {claude.get('name')!r}")
     entry = entries.get(name)
@@ -62,10 +54,7 @@ for plugin in sorted((root / "plugins").iterdir()):
         errors.append(f"{name}: marketplace source is {entry.get('source')!r}")
     if (plugin / "tests").exists():
         errors.append(f"{name}: has a tests/ folder; move it to tests/{name}/")
-    skills = sorted((plugin / "skills").glob("*/"))
-    if not skills:
-        errors.append(f"{name}: no skills/<name>/ folder")
-    for skill in skills:
+    for skill in sorted((plugin / "skills").glob("*/")):
         md = skill / "SKILL.md"
         if not md.is_file():
             errors.append(f"{name}: {skill.name}/ has no SKILL.md")
@@ -83,7 +72,7 @@ for missing in set(entries) - {p.name for p in (root / "plugins").iterdir() if p
 for e in errors:
     print(f"  FAIL  {e}")
 if not errors:
-    print("  ok    manifests agree, marketplace complete, skills named after their folders")
+    print("  ok    manifests named after their folders, marketplace complete, skills named after their folders")
 sys.exit(1 if errors else 0)
 PY
 

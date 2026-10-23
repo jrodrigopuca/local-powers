@@ -2,7 +2,7 @@
   "name": "local-powers",
   "owner": { "name": "jarp", "url": "https://github.com/jrodrigopuca" },
   "metadata": {
-    "description": "Plugins for Claude and ChatGPT/Codex"
+    "description": "Plugins for Claude Code"
   },
   "plugins": [
     {
