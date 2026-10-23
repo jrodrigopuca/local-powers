@@ -29,6 +29,7 @@ Third-party marketplaces don't auto-update by default: run
 
 > Claude Code only. Codex/ChatGPT support existed and was removed
 > ([ADR-0002](docs/adr/0002-claude-only.md)), which also explains how to bring it back.
+> Notes from trying Codex and Kiro: [docs/other-platforms.md](docs/other-platforms.md).
 
 ## Repository layout
 
