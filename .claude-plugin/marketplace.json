@@ -1,0 +1,14 @@
+{
+  "name": "local-powers",
+  "owner": { "name": "jarp", "url": "https://github.com/jrodrigopuca" },
+  "metadata": {
+    "description": "Plugins for Claude and ChatGPT/Codex"
+  },
+  "plugins": [
+    {
+      "name": "commit-style",
+      "source": "./plugins/commit-style",
+      "description": "Propose one-line Conventional Commits messages from staged changes"
+    }
+  ]
+}
