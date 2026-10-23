@@ -31,7 +31,8 @@ codex plugin marketplace add jrodrigopuca/local-powers
 ## Use
 
 Ask for a commit message ("propose a commit message for what's staged"), or run
-the skill directly in Claude Code with `/commit-style:msg`.
+the skill directly: `/commit-style:msg` in Claude Code, `$commit-style:msg` in the
+Codex CLI.
 
 ## Tests
 

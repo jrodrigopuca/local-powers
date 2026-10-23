@@ -30,7 +30,9 @@ codex plugin marketplace add jrodrigopuca/local-powers
 codex plugin add commit-style@local-powers
 ```
 
-Then just ask, e.g. *"propose a commit message for my changes"*. The skill runs on
+Then just ask, e.g. *"propose a commit message for my changes"*, or invoke a skill
+directly as `/<plugin>:<skill>` in Claude Code and `$<plugin>:<skill>` in the Codex
+CLI (`/commit-style:msg`, `$commit-style:msg`). The skill runs on
 whatever model your session is using; it adds no model or service of its own.
 
 > Not yet listed in Anthropic's or OpenAI's public plugin directories: install from
