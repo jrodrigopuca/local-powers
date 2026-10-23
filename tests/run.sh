@@ -84,7 +84,10 @@ run_codex() { # $1 fixture, $2 answer file
   else
     model_flag=(-m "$codex_model")
   fi
-  codex exec -C "$1" -s read-only "${model_flag[@]}" --json -o "$2" "$prompt" \
+  # NOT isolated: Codex loads the user's ~/.codex (skills, agents). Isolating it
+  # needs a separate CODEX_HOME holding the user's auth.json, which we don't do.
+  # --ephemeral keeps test sessions out of the user's Codex history.
+  codex exec -C "$1" -s read-only --ephemeral "${model_flag[@]}" --json -o "$2" "$prompt" \
     < /dev/null > "$2.log" 2> "$2.err" || true
   python3 -I - "$2.log" "$2" "${model:-?}" <<'PY'
 import json, sys
