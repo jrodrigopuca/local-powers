@@ -32,5 +32,5 @@ Ask for a commit message ("propose a commit message for what's staged").
 
 ## Tests
 
-- `tests/check-header.sh "<header>" [type]` checks a header against the contract.
-- `tests/make-fixtures.sh <dir>` builds throwaway repos with an unambiguous type.
+Tests live outside the plugin, in the repository's `tests/commit-style/`, so they
+are not installed with it. Run them with `tests/run.sh commit-style`.

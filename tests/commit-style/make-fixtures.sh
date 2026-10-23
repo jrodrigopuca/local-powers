@@ -17,6 +17,7 @@ base() { # $1 = fixture name; creates a repo with one initial commit
   printf 'export function add(a, b) {\n  return a + b;\n}\n' > src/math.js
   printf 'import { add } from "../src/math.js";\nconsole.assert(add(1, 2) === 3);\n' > test/math.test.js
   printf '# Math\n\nTiny math helpers.\n' > README.md
+  printf '{ "name": "math", "dependencies": { "left-pad": "^1.2.0" } }\n' > package.json
   printf '{ "name": "math", "lockfileVersion": 3, "packages": {} }\n' > package-lock.json
   git add -A && git commit -qm "chore: initial commit"
 }
@@ -37,14 +38,30 @@ printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
 git add src && echo feat > EXPECTED_TYPE
 
 # fix: a bug fix, plus a noisy lockfile that must be ignored
+big_lockfile() { # a 500-package lockfile: noise the skill must not read in full
+  python3 -c 'import json;print(json.dumps({"name":"math","lockfileVersion":3,"packages":{f"node_modules/p{i}":{"version":"1.0.1"} for i in range(500)}},indent=2))' > package-lock.json
+}
+
+# fix: a bug fix plus a dependency bump; a split is fine, but one header must be fix
 base fix-with-lockfile
 sed -i.bak 's/return a + b;/return Number(a) + Number(b);/' src/math.js && rm src/math.js.bak
-python3 -c 'import json;print(json.dumps({"name":"math","lockfileVersion":3,"packages":{f"node_modules/p{i}":{"version":"1.0.0"} for i in range(500)}},indent=2))' > package-lock.json
+sed -i.bak 's/\^1.2.0/^1.3.0/' package.json && rm package.json.bak
+big_lockfile
 git add -A && echo fix > EXPECTED_TYPE
+
+# build: only the lockfile changes (tie-breaker: lockfile-only → build, not chore)
+base build-lockfile-only
+big_lockfile
+git add -A && echo build > EXPECTED_TYPE
 
 # nothing staged: must suggest a git add, not invent a commit
 base unstaged-only
 printf '\nexport const PI = 3.14159;\n' >> src/math.js
 echo feat > EXPECTED_TYPE
+
+# Snapshot the staged set so check.sh can prove the skill only proposed.
+for d in "$out"/*/; do
+  git -C "$d" diff --staged --name-only > "$d/.git/STAGED_SNAPSHOT"
+done
 
 echo "Fixtures in $out:"; ls "$out"

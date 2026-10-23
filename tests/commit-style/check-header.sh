@@ -7,7 +7,7 @@ set -euo pipefail
 header="${1:?usage: check-header.sh \"<header>\" [expected-type]}"
 expected="${2:-}"
 types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
-pattern="^(${types})(\([a-z0-9][a-z0-9-]*\))?!?: [^ ].*[^.]$"
+pattern="^(${types})(\([a-z0-9][a-z0-9-]*\))?!?: [^ .](.*[^.])?$"
 
 fail() { echo "FAIL: $1 — '$header'"; exit 1; }
 
