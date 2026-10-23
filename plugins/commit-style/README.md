@@ -1,9 +1,10 @@
 # commit-style
 
 Proposes a one-line [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-message for your changes. It reads the staged changes (or the pending ones, when
-nothing is staged), follows the style already used in the repository's history,
-and replies with a single header:
+message for your changes. When something is staged it looks only at that and
+proposes one header for all of it. When nothing is staged it looks at all pending
+changes and, if they mix unrelated purposes, suggests one header per group of
+files. It follows the style already used in the repository's history:
 
 ```
 <type>[(scope)][!]: <description>     # max 72 characters, no body, no footer

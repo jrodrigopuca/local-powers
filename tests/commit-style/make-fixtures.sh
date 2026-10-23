@@ -58,12 +58,25 @@ base unstaged-only
 printf '\nexport const PI = 3.14159;\n' >> src/math.js
 echo feat > EXPECTED_TYPE
 
+# nothing staged, two unrelated purposes: suggest a split (a feature and a CI change)
+base unstaged-mixed
+printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
+mkdir -p .github/workflows
+printf 'name: test\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: node test/math.test.js\n' > .github/workflows/test.yml
+echo "ci feat" > EXPECTED_TYPE
+
 # staged wins: a staged docs change plus a pending feature → describe only the docs
 base staged-and-pending
 printf '\n## Usage\n\nImport `add` from `src/math.js`.\n' >> README.md
 git add README.md
 printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
 echo docs > EXPECTED_TYPE
+
+# staged together on purpose: a new function plus an unrelated fix → one feat header
+base mixed-staged
+sed -i.bak 's/return a + b;/return Number(a) + Number(b);/' src/math.js && rm src/math.js.bak
+printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
+git add src && echo feat > EXPECTED_TYPE
 
 # nothing at all: say there is nothing to commit, propose no header
 base no-changes

@@ -20,10 +20,13 @@ user's decision: never run, and never suggest, `git add`, `git restore`,
 ## 1. Find what the message describes
 
 1. Run `git diff --staged --stat`.
-2. **Something is staged** → the message describes the staged changes only.
-3. **Nothing staged** → run `git status --short`; the message describes the
-   pending changes (modified and untracked files). If there are no changes at
-   all, say so and stop.
+2. **Something is staged** → look at the staged changes only, and propose
+   exactly one header for them (see "Everything staged goes together" below).
+3. **Nothing staged** → run `git status --short` and look at all pending
+   changes (modified and untracked files). If they share one purpose, propose
+   one header. If they clearly mix unrelated purposes, suggest separate commits:
+   one header per group, each with the files it covers. If there are no
+   changes at all, say so and stop.
 
 ## 2. Read the diff without flooding the context
 
@@ -48,22 +51,30 @@ description, imperative mood ("add", not "added").
   Choose by the change's effect for the user of the code, not by the files touched.
   Tie-breakers: code plus its tests → the code's type; lockfile-only or
   dependency changes → `build` (not `chore`), unless they fix a bug the user
-  sees → `fix`. When the changes mix purposes, the type follows the main one
-  (a fix plus the dependency bump it needed → `fix`).
+  sees → `fix`.
+- **Everything staged goes together**: the user staged it on purpose, so the
+  header describes the whole set — do not question the grouping. When it mixes
+  purposes, the type is the one with the most impact for the user of the code:
+  `feat` > `fix` > `perf` > `refactor` > the rest (a fix plus the dependency
+  bump it needed → `fix`; a new function plus an unrelated fix → `feat`).
 - **scope** (optional): the area that changed, taken from the path
   (`plugins/commit-style/...` → `commit-style`). Omit it when the change spans
   unrelated areas or the repo does not use scopes.
 - **`!`**: only when the change breaks compatibility for callers (removed or
   renamed public API, changed output format, changed config). It is the only
   way to mark a breaking change, since there is no footer.
-- **description**: what the change does, imperative, no trailing period.
+- **description**: what the change does, imperative, no trailing period. When
+  the set mixes purposes, name each one if they fit (`add multiply and coerce
+  add operands`).
 
 If the header does not fit in 72 characters, shorten the description to the
-main purpose — never truncate mid-word.
+purpose that gave the type — never truncate mid-word.
 
 ## Output
 
-Exactly one header, alone in a `text` code block, then at most one line
-explaining the choice of type. If the changes clearly mix unrelated purposes,
-that line may say so (e.g. "this also includes an unrelated README change"),
-without commands: the user decides what to do with it.
+Each header alone in a `text` code block, then at most one line explaining the
+choice of type.
+
+- Staged changes: exactly one header. No advice on how to group or split them.
+- Pending changes split into groups: for each group, one line listing its files
+  and then its header block. No git commands: staging stays with the user.

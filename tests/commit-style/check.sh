@@ -22,12 +22,14 @@ if [[ "$expected" == none ]]; then
   [[ -z "$headers" ]] || { echo "FAIL: proposed a header with nothing to commit"; status=1; }
   grep -q '[^[:space:]]' "$answer" || { echo "FAIL: empty answer"; status=1; }
 else
+  # EXPECTED_TYPE lists one type per expected header ("feat", or "ci feat" for a split).
   [[ -n "$headers" ]] || { echo "FAIL: no header found in answer"; exit 1; }
-  count="$(wc -l <<< "$headers" | tr -d ' ')"
-  [[ "$count" == 1 ]] || { echo "FAIL: $count headers proposed (expected exactly 1)"; status=1; }
   while IFS= read -r h; do
-    "$here/check-header.sh" "$h" "$expected" || status=1
+    "$here/check-header.sh" "$h" || status=1
   done <<< "$headers"
+  want="$(tr ' ' '\n' <<< "$expected" | sort | xargs)"
+  got="$(while IFS= read -r h; do echo "${h%%[(!:]*}"; done <<< "$headers" | sort | xargs)"
+  [[ "$got" == "$want" ]] || { echo "FAIL: header types [$got], expected [$want]"; status=1; }
 fi
 
 # Staging and committing are the user's call: no such command in the answer.
