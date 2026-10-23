@@ -37,12 +37,11 @@ base feat-export
 printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
 git add src && echo feat > EXPECTED_TYPE
 
-# fix: a bug fix, plus a noisy lockfile that must be ignored
 big_lockfile() { # a 500-package lockfile: noise the skill must not read in full
   python3 -c 'import json;print(json.dumps({"name":"math","lockfileVersion":3,"packages":{f"node_modules/p{i}":{"version":"1.0.1"} for i in range(500)}},indent=2))' > package-lock.json
 }
 
-# fix: a bug fix plus a dependency bump; a split is fine, but one header must be fix
+# fix: a bug fix plus the dependency bump; the type follows the main purpose
 base fix-with-lockfile
 sed -i.bak 's/return a + b;/return Number(a) + Number(b);/' src/math.js && rm src/math.js.bak
 sed -i.bak 's/\^1.2.0/^1.3.0/' package.json && rm package.json.bak
@@ -54,10 +53,17 @@ base build-lockfile-only
 big_lockfile
 git add -A && echo build > EXPECTED_TYPE
 
-# nothing staged: must suggest a git add, not invent a commit
+# nothing staged: the message describes the pending changes
 base unstaged-only
 printf '\nexport const PI = 3.14159;\n' >> src/math.js
 echo feat > EXPECTED_TYPE
+
+# staged wins: a staged docs change plus a pending feature → describe only the docs
+base staged-and-pending
+printf '\n## Usage\n\nImport `add` from `src/math.js`.\n' >> README.md
+git add README.md
+printf '\nexport function multiply(a, b) {\n  return a * b;\n}\n' >> src/math.js
+echo docs > EXPECTED_TYPE
 
 # Snapshot the staged set so check.sh can prove the skill only proposed.
 for d in "$out"/*/; do

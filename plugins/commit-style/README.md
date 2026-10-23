@@ -1,15 +1,16 @@
 # commit-style
 
 Proposes a one-line [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-message for what you are about to commit. It reads the staged changes (or, when
-nothing is staged, suggests what to stage), follows the style already used in the
-repository's history, and replies with a single header:
+message for your changes. It reads the staged changes (or the pending ones, when
+nothing is staged), follows the style already used in the repository's history,
+and replies with a single header:
 
 ```
 <type>[(scope)][!]: <description>     # max 72 characters, no body, no footer
 ```
 
-It only **proposes**: it never runs `git add` or `git commit`.
+It only **proposes** the message: what to stage and when to commit is up to you,
+so it never runs or suggests `git add`, `git restore` or `git commit`.
 
 ## Install
 

@@ -1,6 +1,6 @@
 ---
 name: commit-style
-description: Propose a one-line Conventional Commits message for the staged changes (or for the pending changes, suggesting what to stage). Use when the user asks for a commit message, what to commit, or how to describe their changes. Proposes only; never runs git commit.
+description: Propose a one-line Conventional Commits message for the staged changes, or for the pending changes when nothing is staged. Use when the user asks for a commit message or how to describe their changes. Proposes the message only; staging and committing stay with the user.
 ---
 
 # commit-style
@@ -13,23 +13,25 @@ Propose a commit message in the form:
 
 One line. No body, no footer. **Maximum 72 characters in total.**
 
-You only PROPOSE the message. Never run `git commit`, `git add`, or any command
-that changes the repository. Reading commands only.
+You only PROPOSE the message. What to stage and whether to commit is the
+user's decision: never run, and never suggest, `git add`, `git restore`,
+`git commit` or any command that changes the repository. Reading commands only.
 
-## 1. Find what will be committed
+## 1. Find what the message describes
 
 1. Run `git diff --staged --stat`.
-2. **Something is staged** → that is the commit. Ignore unstaged changes.
-3. **Nothing staged** → run `git status --short`. If there are changes, propose
-   which files to stage (as a `git add ...` line for the user to run) and the
-   message for that set. If there are no changes at all, say so and stop.
+2. **Something is staged** → the message describes the staged changes only.
+3. **Nothing staged** → run `git status --short`; the message describes the
+   pending changes (modified and untracked files). If there are no changes at
+   all, say so and stop.
 
 ## 2. Read the diff without flooding the context
 
-- Read `git diff --staged` (or `git diff` for the unstaged case) **excluding**
-  noise: lockfiles (`*.lock`, `package-lock.json`, `pnpm-lock.yaml`,
-  `Gemfile.lock`, `Cargo.lock`, `go.sum`), minified or generated files, and
-  binaries. Use pathspecs, e.g. `git diff --staged -- . ':!package-lock.json'`.
+- Read `git diff --staged` (or `git diff` plus the untracked files when nothing
+  is staged) **excluding** noise: lockfiles (`*.lock`, `package-lock.json`,
+  `pnpm-lock.yaml`, `Gemfile.lock`, `Cargo.lock`, `go.sum`), minified or
+  generated files, and binaries. Use pathspecs, e.g.
+  `git diff --staged -- . ':!package-lock.json'`.
 - If the remaining diff is large (over ~400 changed lines), do not read it all:
   use the `--stat` output plus the hunk headers (`git diff --staged -U0`) and
   read only the files that decide the type.
@@ -46,7 +48,8 @@ description, imperative mood ("add", not "added").
   Choose by the change's effect for the user of the code, not by the files touched.
   Tie-breakers: code plus its tests → the code's type; lockfile-only or
   dependency changes → `build` (not `chore`), unless they fix a bug the user
-  sees → `fix`.
+  sees → `fix`. When the changes mix purposes, the type follows the main one
+  (a fix plus the dependency bump it needed → `fix`).
 - **scope** (optional): the area that changed, taken from the path
   (`plugins/commit-style/...` → `commit-style`). Omit it when the change spans
   unrelated areas or the repo does not use scopes.
@@ -55,17 +58,12 @@ description, imperative mood ("add", not "added").
   way to mark a breaking change, since there is no footer.
 - **description**: what the change does, imperative, no trailing period.
 
-If the header does not fit in 72 characters, shorten the description — never
-truncate mid-word. If it still does not fit, the commit likely does more than
-one thing: see step 5.
-
-## 5. One commit, one purpose
-
-If the changes clearly mix purposes (a feature plus an unrelated fix, a refactor
-plus a behaviour change), say so and propose a split: which files go in each
-commit, and one header for each.
+If the header does not fit in 72 characters, shorten the description to the
+main purpose — never truncate mid-word.
 
 ## Output
 
-Reply with the header in a code block, then at most one line explaining the
-choice of type. For a split, one code block per commit with its `git add` line.
+Exactly one header, alone in a `text` code block, then at most one line
+explaining the choice of type. If the changes clearly mix unrelated purposes,
+that line may say so (e.g. "this also includes an unrelated README change"),
+without commands: the user decides what to do with it.
