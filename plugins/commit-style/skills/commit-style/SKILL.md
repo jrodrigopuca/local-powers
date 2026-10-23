@@ -44,6 +44,9 @@ description, imperative mood ("add", not "added").
 
 - **type**: pick from [references/conventional-commits.md](references/conventional-commits.md).
   Choose by the change's effect for the user of the code, not by the files touched.
+  Tie-breakers: code plus its tests → the code's type; lockfile-only or
+  dependency changes → `build` (not `chore`), unless they fix a bug the user
+  sees → `fix`.
 - **scope** (optional): the area that changed, taken from the path
   (`plugins/commit-style/...` → `commit-style`). Omit it when the change spans
   unrelated areas or the repo does not use scopes.

@@ -1,6 +1,6 @@
 {
   "name": "commit-style",
-  "version": "0.1.0-claude",
+  "version": "0.1.0",
   "description": "Propose one-line Conventional Commits messages from staged changes",
   "author": { "name": "jarp", "url": "https://github.com/jrodrigopuca" },
   "repository": "https://github.com/jrodrigopuca/local-powers",
