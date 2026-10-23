@@ -11,7 +11,15 @@
 #
 # Every case is one model call per CLI. Codex has no --plugin-dir, so the
 # plugin is installed from this repo's marketplace and removed on exit.
+#
+# Models default to small ones to keep test runs cheap; override per CLI:
+#   CLAUDE_MODEL=sonnet tests/run.sh commit-style claude
+#   CODEX_MODEL=default tests/run.sh commit-style codex   ("default" = the CLI's configured model)
+# The model and tokens of every case are reported at the end of each CLI.
 set -euo pipefail
+
+claude_model="${CLAUDE_MODEL:-haiku}"
+codex_model="${CODEX_MODEL:-gpt-6-luna}"
 
 plugin="${1:?usage: tests/run.sh <plugin> [claude|codex|both]}"
 clis="${2:-both}"
@@ -39,14 +47,51 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Each runner writes the answer text to $2 and "<model>\t<input>\t<output>" to $2.meta.
 run_claude() { # $1 fixture, $2 answer file
-  (cd "$1" && claude -p "$prompt" --plugin-dir "$plugin_dir" \
+  local model_flag=(); [[ "$claude_model" == default ]] || model_flag=(--model "$claude_model")
+  (cd "$1" && claude -p "$prompt" --plugin-dir "$plugin_dir" "${model_flag[@]}" \
     --allowedTools "Bash(git diff:*)" "Bash(git status:*)" "Bash(git log:*)" "Read" \
-    < /dev/null > "$2" 2> "$2.err")
+    --output-format json < /dev/null > "$2.json" 2> "$2.err") || true
+  python3 -I - "$2.json" "$2" <<'PY'
+import json, sys
+src, answer = sys.argv[1], sys.argv[2]
+try:
+    r = json.load(open(src))
+except ValueError:
+    r = {}
+open(answer, "w").write(r.get("result", ""))
+u = r.get("usage", {})
+inp = sum(u.get(k, 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+models = ",".join(r.get("modelUsage", {})) or "?"
+open(answer + ".meta", "w").write(f"{models}\t{inp}\t{u.get('output_tokens', 0)}\n")
+PY
 }
 
 run_codex() { # $1 fixture, $2 answer file
-  codex exec -C "$1" -s read-only -o "$2" "$prompt" < /dev/null > "$2.log" 2>&1
+  local model_flag=() model="$codex_model"
+  if [[ "$codex_model" == default ]]; then
+    model="$(sed -nE 's/^model *= *"(.*)"/\1/p' "$HOME/.codex/config.toml" 2>/dev/null | head -1)"
+  else
+    model_flag=(-m "$codex_model")
+  fi
+  codex exec -C "$1" -s read-only "${model_flag[@]}" --json -o "$2" "$prompt" \
+    < /dev/null > "$2.log" 2> "$2.err" || true
+  python3 -I - "$2.log" "$2" "${model:-?}" <<'PY'
+import json, sys
+log, answer, model = sys.argv[1:4]
+inp = out = 0
+for line in open(log):
+    try:
+        e = json.loads(line)
+    except ValueError:
+        continue
+    if e.get("type") == "turn.completed":
+        u = e.get("usage", {})
+        inp += u.get("input_tokens", 0)
+        out += u.get("output_tokens", 0)
+open(answer + ".meta", "w").write(f"{model}\t{inp}\t{out}\n")
+PY
 }
 
 fail=0
@@ -84,6 +129,12 @@ for cli in "${clis[@]}"; do
       echo "  FAIL  $case_name"; sed 's/^/        /' <<< "$out"; fail=1
     fi
   done
+
+  # Model(s) used and tokens spent by this CLI, summed over its cases.
+  cat "$work/$cli/answers"/*.meta 2>/dev/null | awk -F'\t' '
+    { models[$1] = 1; i += $2; o += $3 }
+    END { m = ""; for (k in models) m = m (m ? ", " : "") k
+          printf "  model: %s — tokens: %d in, %d out\n", m, i, o }'
 done
 
 exit "$fail"
