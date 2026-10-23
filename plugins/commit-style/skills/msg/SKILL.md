@@ -1,9 +1,9 @@
 ---
-name: commit-style
+name: msg
 description: Propose Conventional Commits headers (single-line messages) for the staged changes, or for the pending changes when nothing is staged. Use when the user asks for a commit message or how to describe their changes. Proposes the message only; staging and committing stay with the user.
 ---
 
-# commit-style
+# msg
 
 Each commit message you propose is a single header line:
 
