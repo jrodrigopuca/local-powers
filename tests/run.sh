@@ -62,9 +62,12 @@ except ValueError:
     r = {}
 open(answer, "w").write(r.get("result", ""))
 u = r.get("usage", {})
-inp = sum(u.get(k, 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+fresh = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
+cached = u.get("cache_read_input_tokens", 0)
 models = ",".join(r.get("modelUsage", {})) or "?"
-open(answer + ".meta", "w").write(f"{models}\t{inp}\t{u.get('output_tokens', 0)}\n")
+cost = r.get("total_cost_usd")
+cost = f"{cost:.4f}" if isinstance(cost, (int, float)) else "-"
+open(answer + ".meta", "w").write(f"{models}\t{fresh}\t{cached}\t{u.get('output_tokens', 0)}\t{cost}\n")
 PY
 }
 
@@ -80,7 +83,7 @@ run_codex() { # $1 fixture, $2 answer file
   python3 -I - "$2.log" "$2" "${model:-?}" <<'PY'
 import json, sys
 log, answer, model = sys.argv[1:4]
-inp = out = 0
+fresh = cached = out = 0
 for line in open(log):
     try:
         e = json.loads(line)
@@ -88,9 +91,12 @@ for line in open(log):
         continue
     if e.get("type") == "turn.completed":
         u = e.get("usage", {})
-        inp += u.get("input_tokens", 0)
+        c = u.get("cached_input_tokens", 0)  # a subset of input_tokens
+        fresh += u.get("input_tokens", 0) - c
+        cached += c
         out += u.get("output_tokens", 0)
-open(answer + ".meta", "w").write(f"{model}\t{inp}\t{out}\n")
+# Codex does not report cost.
+open(answer + ".meta", "w").write(f"{model}\t{fresh}\t{cached}\t{out}\t-\n")
 PY
 }
 
@@ -132,9 +138,11 @@ for cli in "${clis[@]}"; do
 
   # Model(s) used and tokens spent by this CLI, summed over its cases.
   cat "$work/$cli/answers"/*.meta 2>/dev/null | awk -F'\t' '
-    { models[$1] = 1; i += $2; o += $3 }
+    { models[$1] = 1; f += $2; c += $3; o += $4; if ($5 != "-") { cost += $5; has = 1 } }
     END { m = ""; for (k in models) m = m (m ? ", " : "") k
-          printf "  model: %s — tokens: %d in, %d out\n", m, i, o }'
+          printf "  model: %s — tokens: %d new in, %d cached in, %d out", m, f, c, o
+          if (has) printf " — cost: US$%.4f", cost
+          printf "\n" }'
 done
 
 exit "$fail"
