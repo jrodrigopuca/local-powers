@@ -50,7 +50,13 @@ trap cleanup EXIT
 # Each runner writes the answer text to $2 and "<model>\t<input>\t<output>" to $2.meta.
 run_claude() { # $1 fixture, $2 answer file
   local model_flag=(); [[ "$claude_model" == default ]] || model_flag=(--model "$claude_model")
+  # Isolated from the user's setup: no user/project/local settings (their skills,
+  # agents, hooks), no MCP servers, no saved session; per-machine sections (cwd,
+  # git status) move out of the system prompt so cases share its cache.
+  # (--safe-mode is not usable: it also disables --plugin-dir skills.)
   (cd "$1" && claude -p "$prompt" --plugin-dir "$plugin_dir" "${model_flag[@]}" \
+    --setting-sources "" --strict-mcp-config --no-session-persistence \
+    --exclude-dynamic-system-prompt-sections \
     --allowedTools "Bash(git diff:*)" "Bash(git status:*)" "Bash(git log:*)" "Read" \
     --output-format json < /dev/null > "$2.json" 2> "$2.err") || true
   python3 -I - "$2.json" "$2" <<'PY'
