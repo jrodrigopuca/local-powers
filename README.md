@@ -73,7 +73,20 @@ commands are Claude Code only (see ADR-0001).
 
 ## Testing
 
-Each plugin's test folder provides:
+**Structural checks** (no model calls, a few seconds): `scripts/check.sh` checks
+the manifests, the marketplace, the skills' names, the scripts, runs
+`claude plugin validate --strict` when the `claude` CLI is installed, and runs
+each plugin's checker self-test. To run it before every push, enable the hook
+once per clone:
+
+```
+git config core.hooksPath .githooks
+```
+
+A failing check stops the push; `git push --no-verify` skips it.
+
+**Behaviour tests** (real model calls) live in `tests/<plugin>/`. Each plugin's
+test folder provides:
 
 | File | Purpose |
 |------|---------|

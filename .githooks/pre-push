@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Runs the structural checks before every push; a failure stops the push.
+# Enable once per clone:   git config core.hooksPath .githooks
+# Skip it for one push:    git push --no-verify
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+echo "pre-push: running scripts/check.sh (skip with --no-verify)"
+if ! "$root/scripts/check.sh"; then
+  echo
+  echo "pre-push: checks failed, push stopped. Fix them, or push with --no-verify."
+  exit 1
+fi
