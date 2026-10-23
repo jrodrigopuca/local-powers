@@ -97,3 +97,7 @@ tests/run.sh commit-style both no-changes    # one case
   or session history. Codex runs with your own `~/.codex` (skills and agents
   included) and installs the plugin from this repository for the run, removing
   it on exit.
+
+## License
+
+[MIT](LICENSE)
