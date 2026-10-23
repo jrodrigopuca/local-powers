@@ -1,17 +1,20 @@
 ---
 name: commit-style
-description: Propose a one-line Conventional Commits message for the staged changes, or for the pending changes when nothing is staged. Use when the user asks for a commit message or how to describe their changes. Proposes the message only; staging and committing stay with the user.
+description: Propose Conventional Commits headers (single-line messages) for the staged changes, or for the pending changes when nothing is staged. Use when the user asks for a commit message or how to describe their changes. Proposes the message only; staging and committing stay with the user.
 ---
 
 # commit-style
 
-Propose a commit message in the form:
+Each commit message you propose is a single header line:
 
 ```
 <type>[(scope)][!]: <description>
 ```
 
-One line. No body, no footer. **Maximum 72 characters in total.**
+No body, no footer. **Maximum 72 characters per header.** "Single line" is
+the shape of each message, not how many you propose: staged changes get
+exactly one header; unstaged changes that mix unrelated purposes get one
+header per group (step 1).
 
 You only PROPOSE the message. What to stage and whether to commit is the
 user's decision: never run, and never suggest, `git add`, `git restore`,
@@ -72,8 +75,12 @@ purpose that gave the type — never truncate mid-word.
 
 ## Output
 
-Each header alone in a `text` code block, then at most one line explaining the
-choice of type.
+Each header alone on its own line inside a fenced `text` code block (never
+inline backticks), then at most one line explaining the choice of type:
+
+    ```text
+    feat(math): add multiply function
+    ```
 
 - Staged changes: exactly one header. No advice on how to group or split them.
 - Pending changes split into groups: for each group, one line listing its files
