@@ -91,9 +91,11 @@ tests/run.sh commit-style no-changes    # one case
 ```
 
 - **Model:** `haiku` by default to keep runs cheap. Override with
-  `CLAUDE_MODEL=…`; `default` uses your configured model. Run once with
-  `default` before a release: a pass on a small model does not guarantee one on
-  a large model.
+  `CLAUDE_MODEL=…`. Before a release, run once with the model you actually
+  work with (e.g. `CLAUDE_MODEL=opus`): a pass on a small model does not
+  guarantee one on a large model. `CLAUDE_MODEL=default` is Claude Code's
+  built-in default, **not** the model in your settings — the runs don't read
+  your settings.
 - **Cost:** each case is a real model call. The end of the run reports the
   model, the tokens and the cost.
 - **Isolation:** tests run without your settings, skills, agents, MCP servers

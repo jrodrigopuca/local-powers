@@ -10,9 +10,10 @@
 #   check.sh <fixture> <answer>   exits 0 when the answer passes
 #
 # Every case is one model call. The model defaults to a small one to keep runs
-# cheap; override it with CLAUDE_MODEL (an alias, a model id, or "default" for
-# the CLI's configured model):
-#   CLAUDE_MODEL=sonnet tests/run.sh commit-style
+# cheap; override it with CLAUDE_MODEL (an alias or a model id):
+#   CLAUDE_MODEL=opus tests/run.sh commit-style
+# "default" means Claude Code's built-in default, not the model in the user's
+# settings: runs use --setting-sources "", so those settings are never read.
 # The model, tokens and cost are reported at the end.
 #
 # (Codex support was removed in ADR-0002; docs/adr/0002-claude-only.md says how
