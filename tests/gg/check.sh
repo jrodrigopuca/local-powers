@@ -32,7 +32,10 @@ if transcript.exists():
             e = json.loads(line)
         except ValueError:
             continue
-        for block in (e.get("message") or {}).get("content") or []:
+        message = e.get("message")
+        if not isinstance(message, dict):  # e.g. system/permission_denied carries a string
+            continue
+        for block in message.get("content") or []:
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "tool_use" and block.get("name") == "Bash":

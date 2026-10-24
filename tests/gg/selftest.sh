@@ -62,6 +62,9 @@ cmd, out = sys.argv[1], sys.argv[2]
 if cmd:
     print(json.dumps({"type": "assistant", "message": {"content": [
         {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": cmd}}]}}))
+    if out == "DENIED":  # what claude -p records when a tool isn't allowed
+        print(json.dumps({"type": "system", "subtype": "permission_denied",
+                          "message": "This command requires approval"}))
     print(json.dumps({"type": "user", "message": {"content": [
         {"type": "tool_result", "tool_use_id": "t1", "content": out, "is_error": out == "DENIED"}]}}))
 PY
