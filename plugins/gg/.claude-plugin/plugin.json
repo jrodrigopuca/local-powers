@@ -1,0 +1,9 @@
+{
+  "name": "gg",
+  "version": "0.1.0",
+  "description": "Games to play with Claude, one skill per game; starts with rock, paper, scissors",
+  "author": { "name": "jarp", "url": "https://github.com/jrodrigopuca" },
+  "repository": "https://github.com/jrodrigopuca/local-powers",
+  "license": "MIT",
+  "keywords": ["games", "rock-paper-scissors"]
+}

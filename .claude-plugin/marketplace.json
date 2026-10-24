@@ -9,6 +9,11 @@
       "name": "commit-style",
       "source": "./plugins/commit-style",
       "description": "Propose one-line Conventional Commits messages from staged changes"
+    },
+    {
+      "name": "gg",
+      "source": "./plugins/gg",
+      "description": "Games to play with Claude, one skill per game; starts with rock, paper, scissors"
     }
   ]
 }
