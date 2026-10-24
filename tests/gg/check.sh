@@ -6,7 +6,8 @@
 # A played round passes when: the script ran exactly once, as
 # `python3 <path>/jugada.py <piedra|papel|tijera>` with the expected move and
 # nothing else on the line; the reply's round line reports the same moves and
-# outcome the script returned; and the score line counts that one round.
+# outcome the script returned; and there is no score line (each call is one
+# complete game, nothing is carried over).
 # A case that must not be played passes when no round was reported (and, for
 # "none", the script never ran) and the reply is not empty.
 set -euo pipefail
@@ -62,11 +63,11 @@ EN = {"piedra": "rock", "papel": "paper", "tijera": "scissors"}
 word = (lambda m: EN[m]) if lang == "en" else (lambda m: m)
 if lang == "en":
     round_re = re.compile(r"^You: (\w+) · Claude: (\w+) → (.+)$")
-    score_re = re.compile(r"^Score: You (\d+) · Claude (\d+) · Ties (\d+)$")
+    score_re = re.compile(r"^Score\b", re.I)
     said = {"gana_usuario": "you win", "gana_claude": "Claude wins", "empate": "tie"}
 else:
     round_re = re.compile(r"^Vos: (\w+) · Claude: (\w+) → (.+)$")
-    score_re = re.compile(r"^Marcador: Vos (\d+) · Claude (\d+) · Empates (\d+)$")
+    score_re = re.compile(r"^Marcador\b", re.I)
     said = {"gana_usuario": "ganás vos", "gana_claude": "gana Claude", "empate": "empate"}
 lines = [l.strip() for l in text.splitlines()]
 rounds = [m for l in lines if (m := round_re.match(l))]
@@ -99,11 +100,8 @@ def played(move):
         fails.append(f"reply says Claude played {claude_w!r}, script says {word(r['claude'])!r}")
     if out_w.strip() != said[r["resultado"]]:
         fails.append(f"reply says {out_w.strip()!r}, script says {said[r['resultado']]!r}")
-    want = {"gana_usuario": (1, 0, 0), "gana_claude": (0, 1, 0), "empate": (0, 0, 1)}[r["resultado"]]
-    if len(scores) != 1:
-        fails.append(f"{len(scores)} score lines in the reply (expected 1)")
-    elif tuple(int(x) for x in scores[0].groups()) != want:
-        fails.append(f"score {scores[0].group(0)!r} does not count the round as {r['resultado']}")
+    if scores:
+        fails.append("the reply keeps a score; each call is a single game")
 
 def not_played(may_call):
     if not may_call and calls:

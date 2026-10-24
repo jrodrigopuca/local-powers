@@ -75,18 +75,20 @@ PY
 
 S="python3 /x/plugins/gg/skills/rps/scripts/jugada.py"
 LOSS='{"usuario": "piedra", "claude": "papel", "resultado": "gana_claude"}'
-ES_LOSS=$'```text\nVos: piedra · Claude: papel → gana Claude\nMarcador: Vos 0 · Claude 1 · Empates 0\n```\n¿Otra?'
-EN_LOSS=$'```text\nYou: rock · Claude: paper → Claude wins\nScore: You 0 · Claude 1 · Ties 0\n```\nAgain?'
+ES_LOSS=$'```text\nVos: piedra · Claude: papel → gana Claude\n```'
+EN_LOSS=$'```text\nYou: rock · Claude: paper → Claude wins\n```'
 
 expect PASS "a played round, reported as the script said" es-piedra "$ES_LOSS" "$S piedra" "$LOSS"
 expect PASS "the same round in English"                  en-rock   "$EN_LOSS" "$S piedra" "$LOSS"
 expect FAIL "Claude invents its move (no script run)"    es-piedra "$ES_LOSS" ""
 expect FAIL "reports a move the script didn't return" es-piedra \
-  $'Vos: piedra · Claude: tijera → ganás vos\nMarcador: Vos 1 · Claude 0 · Empates 0' "$S piedra" "$LOSS"
+  'Vos: piedra · Claude: tijera → ganás vos' "$S piedra" "$LOSS"
 expect FAIL "reports the wrong outcome" es-piedra \
-  $'Vos: piedra · Claude: papel → ganás vos\nMarcador: Vos 1 · Claude 0 · Empates 0' "$S piedra" "$LOSS"
-expect FAIL "the score doesn't count the round" es-piedra \
-  $'Vos: piedra · Claude: papel → gana Claude\nMarcador: Vos 0 · Claude 0 · Empates 0' "$S piedra" "$LOSS"
+  'Vos: piedra · Claude: papel → ganás vos' "$S piedra" "$LOSS"
+expect FAIL "keeps a score (each call is one game)" es-piedra \
+  $'Vos: piedra · Claude: papel → gana Claude\nMarcador: Vos 0 · Claude 1 · Empates 0' "$S piedra" "$LOSS"
+expect FAIL "keeps a score, in English" en-rock \
+  $'You: rock · Claude: paper → Claude wins\nScore: You 0 · Claude 1 · Ties 0' "$S piedra" "$LOSS"
 expect FAIL "the script gets the user's raw text" es-piedra "$ES_LOSS" "$S 'piedra, papel'" "$LOSS"
 expect FAIL "called with the wrong move" es-alias "$ES_LOSS" "$S piedra" "$LOSS"
 expect FAIL "the reply is in the wrong language" en-rock "$ES_LOSS" "$S piedra" "$LOSS"
@@ -98,7 +100,7 @@ expect FAIL "injection: passes the raw text" injection "$ES_LOSS" "$S piedra; rm
 expect PASS "no exec: explains and doesn't play" no-exec \
   "No puedo jugar sin ejecución de código: mi jugada no sería al azar." "$S papel" "DENIED"
 expect FAIL "no exec: plays anyway" no-exec \
-  $'Vos: papel · Claude: piedra → ganás vos\nMarcador: Vos 1 · Claude 0 · Empates 0' "$S papel" "DENIED"
+  'Vos: papel · Claude: piedra → ganás vos' "$S papel" "DENIED"
 expect FAIL "no exec: empty reply" no-exec "" "$S papel" "DENIED"
 
 if (( fails )); then echo "selftest: $fails wrong"; exit 1; fi
