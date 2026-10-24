@@ -5,10 +5,10 @@
 #
 # A played round passes when: the script ran exactly once, as
 # `python3 <path>/jugada.py <piedra|papel|tijera>` with the expected move and
-# nothing else on the line; the reply's round line is exactly the line the
-# script wrote for the reply's language (linea.es / linea.en); and there is no
-# score line (each call is one complete game, nothing is carried over).
-# A case that must not be played passes when no round was reported (and, for
+# nothing else on the line; and the whole reply is exactly the reply the script
+# wrote for its language (respuesta.es / respuesta.en) — nothing added before
+# or after, no spacing changed.
+# A case that must not be played passes when no result was reported (and, for
 # "none", the script never ran) and the reply is not empty.
 set -euo pipefail
 
@@ -58,17 +58,20 @@ def outcome(i):
         return None
     return r if "claude" in r else None
 
-# --- what the reply reports. The script writes the line (linea.es / linea.en);
-# Claude must copy it exactly. U+FE0F (the emoji presentation selector in ✌️)
-# is ignored in comparisons: copying text may drop it and it renders the same.
+# --- what the reply reports. The script writes the whole reply (respuesta.es /
+# respuesta.en); Claude must copy it exactly. Before comparing: \r\n → \n, NFC,
+# and U+FE0F (the emoji presentation selector in ✌️) dropped — copying text may
+# lose it and it renders the same; whitespace is trimmed only at the two ends,
+# so a collapsed space inside the table still fails.
+import unicodedata
 def same(s):
-    return s.replace("️", "").strip()
+    s = unicodedata.normalize("NFC", s.replace("\r\n", "\n")).replace("️", "")
+    return s.strip()
 
-round_re = re.compile(r"^(Vos|You): ")
-score_re = re.compile(r"^(Marcador|Score)\b", re.I)
-lines = [same(l) for l in text.splitlines()]
-rounds = [l for l in lines if round_re.match(l)]
-scores = [l for l in lines if score_re.match(l)]
+reply = same(text)
+# Any sign that a result was shown: a result title, or a table row.
+result_shown = re.search(r"^#+ *(🎉|🤖|🤝)|^(Vos|Yo|You|Me) +(piedra|papel|tijera|rock|paper|scissors)\b",
+                         reply, re.M)
 
 CLEAN = re.compile(r"^python3 \S*/?jugada\.py (piedra|papel|tijera)$")
 
@@ -87,20 +90,18 @@ def played(move):
     if r is None:
         fails.append("the script returned no result")
         return
-    if len(rounds) != 1:
-        fails.append(f"{len(rounds)} round lines in the reply (expected 1)")
-        return
-    want = same((r.get("linea") or {}).get(lang, ""))
-    if rounds[0] != want:
-        fails.append(f"reply line {rounds[0]!r} is not the script's linea.{lang} {want!r}")
-    if scores:
-        fails.append("the reply keeps a score; each call is a single game")
+    want = same((r.get("respuesta") or {}).get(lang, ""))
+    if not want:
+        fails.append(f"the script returned no respuesta.{lang}")
+    elif reply != want:
+        fails.append(f"the reply is not the script's respuesta.{lang}:\n"
+                     f"--- reply\n{reply}\n--- expected\n{want}")
 
 def not_played(may_call):
     if not may_call and calls:
         fails.append(f"the script ran {len(calls)} times (expected none)")
-    if rounds or scores:
-        fails.append("the reply reports a round although none could be played")
+    if result_shown:
+        fails.append("the reply shows a result although none could be played")
     if not text.strip():
         fails.append("empty reply")
 

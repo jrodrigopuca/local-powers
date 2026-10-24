@@ -28,15 +28,23 @@ report exactly what it says.
    In claude.ai chat, run `python3 scripts/jugada.py <move>` from this skill's
    folder.
 3. **Read its JSON.** `claude` is your move, `resultado` the outcome, and
-   `linea` the result already written in each language. Never change it, and
-   never run the script again to get a different result.
-4. **Reply with `linea.es`** (Spanish) **or `linea.en`** (English), whichever is
-   the user's language, copied exactly — emojis included — in a `text` block,
-   and nothing else: no score, no invitation to keep playing. For example:
+   `respuesta` your whole reply, already written in each language. Never change
+   it, and never run the script again to get a different result.
+4. **Your entire reply is `respuesta.es`** (Spanish) **or `respuesta.en`**
+   (English), whichever is the user's language, copied exactly: the `##` title,
+   the blank line, and the ```` ```text ```` block with the two moves, emojis and
+   spacing included. Don't wrap it in another block, and write nothing before or
+   after it — no comment, no score, no invitation to keep playing. In the table,
+   `Yo` / `Me` is you. It looks like this:
+
+   ````
+   ## 🎉 ¡Ganaste!
 
    ```text
-   Vos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖
+   Vos  piedra ✊
+   Yo   tijera ✌️
    ```
+   ````
 
 If the user names another move afterwards, that is a new game: play it the same
 way, with no reference to earlier rounds.

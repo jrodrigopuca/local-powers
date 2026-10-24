@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Elige la jugada de Claude al azar, decide el resultado y arma la línea a mostrar.
+"""Elige la jugada de Claude al azar, decide el resultado y arma la respuesta.
 
 Uso: python3 jugada.py <piedra|papel|tijera>   (también rock, paper, scissors)
 Salida (JSON):
   {"usuario": ..., "claude": ..., "resultado": "gana_usuario|gana_claude|empate",
-   "linea": {"es": "Vos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖",
-             "en": "You: ✊ rock · Claude: ✋ paper → Claude wins 🤖"}}
+   "respuesta": {"es": ..., "en": ...}}
+"respuesta" es la respuesta completa que Claude muestra, en markdown: un título
+con el resultado y, debajo, un bloque con las dos jugadas. Por ejemplo:
+
+    ## 🎉 ¡Ganaste!
+
+    ```text
+    Vos  piedra ✊
+    Yo   tijera ✌️
+    ```
 """
 import json
 import secrets
@@ -21,12 +29,16 @@ ALIAS = {
     "scissors": "tijera", "scissor": "tijera",
 }
 
-# Lo que se muestra: el emoji de cada mano, los nombres en inglés y el resultado.
+# Lo que se muestra. Claude habla en primera persona: "Yo" es Claude.
 EMOJI = {"piedra": "✊", "papel": "✋", "tijera": "✌️"}
-EN = {"piedra": "rock", "papel": "paper", "tijera": "scissors"}
-RESULTADO = {
-    "es": {"gana_usuario": "ganás vos 🎉", "gana_claude": "gana Claude 🤖", "empate": "empate 🤝"},
-    "en": {"gana_usuario": "you win 🎉", "gana_claude": "Claude wins 🤖", "empate": "tie 🤝"},
+NOMBRE = {
+    "es": {"piedra": "piedra", "papel": "papel", "tijera": "tijera"},
+    "en": {"piedra": "rock", "papel": "paper", "tijera": "scissors"},
+}
+FILAS = {"es": ("Vos", "Yo"), "en": ("You", "Me")}
+TITULO = {
+    "es": {"gana_usuario": "🎉 ¡Ganaste!", "gana_claude": "🤖 Gané", "empate": "🤝 Empate"},
+    "en": {"gana_usuario": "🎉 You won!", "gana_claude": "🤖 I won", "empate": "🤝 Tie"},
 }
 
 
@@ -43,14 +55,23 @@ def resolver(usuario: str, claude: str) -> str:
     return "gana_usuario" if GANA_A[usuario] == claude else "gana_claude"
 
 
-def linea(usuario: str, claude: str, resultado: str) -> dict:
-    """La línea que Claude muestra, en cada idioma."""
-    def mano(jugada, nombre):
-        return f"{EMOJI[jugada]} {nombre}"
-    return {
-        "es": f"Vos: {mano(usuario, usuario)} · Claude: {mano(claude, claude)} → {RESULTADO['es'][resultado]}",
-        "en": f"You: {mano(usuario, EN[usuario])} · Claude: {mano(claude, EN[claude])} → {RESULTADO['en'][resultado]}",
-    }
+def respuesta(usuario: str, claude: str, resultado: str) -> dict:
+    """La respuesta completa en cada idioma.
+
+    En la tabla, el relleno es ASCII y va antes del emoji, que cierra la línea:
+    así el ancho variable de los emojis no desalinea nada.
+    """
+    out = {}
+    for idioma, nombres in NOMBRE.items():
+        ancho_fila = max(len(f) for f in FILAS[idioma]) + 2
+        ancho_jugada = max(len(n) for n in nombres.values())
+        filas = [
+            f"{fila:<{ancho_fila}}{nombres[jugada]:<{ancho_jugada}} {EMOJI[jugada]}"
+            for fila, jugada in zip(FILAS[idioma], (usuario, claude))
+        ]
+        out[idioma] = "\n".join(
+            [f"## {TITULO[idioma][resultado]}", "", "```text", *filas, "```"])
+    return out
 
 
 def main() -> int:
@@ -65,7 +86,7 @@ def main() -> int:
     resultado = resolver(usuario, claude)
     print(json.dumps(
         {"usuario": usuario, "claude": claude, "resultado": resultado,
-         "linea": linea(usuario, claude, resultado)},
+         "respuesta": respuesta(usuario, claude, resultado)},
         ensure_ascii=False,
     ))
     return 0
