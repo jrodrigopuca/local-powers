@@ -32,12 +32,27 @@ for raw, want in [("Piedra", "piedra"), ("  TIJERAS ", "tijera"), ("pápel", "pa
                   ("scissor", "tijera")]:
     check(j.normalizar(raw) == want, f"normalizar({raw!r}) == {want!r}")
 
+check(j.linea("piedra", "papel", "gana_claude") == {
+    "es": "Vos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖",
+    "en": "You: ✊ rock · Claude: ✋ paper → Claude wins 🤖"}, "linea for piedra vs papel")
+check(j.linea("tijera", "papel", "gana_usuario")["en"] == "You: ✌️ scissors · Claude: ✋ paper → you win 🎉",
+      "linea for scissors vs paper, in English")
+check(j.linea("papel", "papel", "empate")["es"] == "Vos: ✋ papel · Claude: ✋ papel → empate 🤝",
+      "linea for a tie")
+lines_ok = all(
+    j.EMOJI[u] in l and j.EMOJI[c] in l and j.RESULTADO[lang][j.resolver(u, c)] in l
+    for u in j.OPCIONES for c in j.OPCIONES
+    for lang, l in j.linea(u, c, j.resolver(u, c)).items())
+check(lines_ok, "all 9 lines, both languages, carry both hands and the outcome")
+
 def run(*args):
     p = subprocess.run([sys.executable, "-I", path, *args], capture_output=True, text=True)
     return p.returncode, json.loads(p.stdout)
 rc, r = run("piedra")
 check(rc == 0 and r["usuario"] == "piedra" and r["claude"] in j.OPCIONES
-      and r["resultado"] == j.resolver("piedra", r["claude"]), "a real run returns a consistent round")
+      and r["resultado"] == j.resolver("piedra", r["claude"])
+      and r["linea"] == j.linea("piedra", r["claude"], r["resultado"]),
+      "a real run returns a consistent round and its lines")
 for bad in (["lagarto"], ["piedra; rm -rf ~"], [""], [], ["piedra", "papel"]):
     rc, r = run(*bad)
     check(rc == 1 and "error" in r, f"rejects {bad!r}")
@@ -74,21 +89,26 @@ PY
 }
 
 S="python3 /x/plugins/gg/skills/rps/scripts/jugada.py"
-LOSS='{"usuario": "piedra", "claude": "papel", "resultado": "gana_claude"}'
-ES_LOSS=$'```text\nVos: piedra · Claude: papel → gana Claude\n```'
-EN_LOSS=$'```text\nYou: rock · Claude: paper → Claude wins\n```'
+LOSS='{"usuario": "piedra", "claude": "papel", "resultado": "gana_claude", "linea": {"es": "Vos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖", "en": "You: ✊ rock · Claude: ✋ paper → Claude wins 🤖"}}'
+ES_LOSS=$'```text\nVos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖\n```'
+EN_LOSS=$'```text\nYou: ✊ rock · Claude: ✋ paper → Claude wins 🤖\n```'
 
-expect PASS "a played round, reported as the script said" es-piedra "$ES_LOSS" "$S piedra" "$LOSS"
-expect PASS "the same round in English"                  en-rock   "$EN_LOSS" "$S piedra" "$LOSS"
-expect FAIL "Claude invents its move (no script run)"    es-piedra "$ES_LOSS" ""
+expect PASS "a played round, copied from the script" es-piedra "$ES_LOSS" "$S piedra" "$LOSS"
+expect PASS "the same round in English"              en-rock   "$EN_LOSS" "$S piedra" "$LOSS"
+expect FAIL "Claude invents its move (no script run)" es-piedra "$ES_LOSS" ""
 expect FAIL "reports a move the script didn't return" es-piedra \
-  'Vos: piedra · Claude: tijera → ganás vos' "$S piedra" "$LOSS"
+  'Vos: ✊ piedra · Claude: ✌️ tijera → ganás vos 🎉' "$S piedra" "$LOSS"
 expect FAIL "reports the wrong outcome" es-piedra \
-  'Vos: piedra · Claude: papel → ganás vos' "$S piedra" "$LOSS"
+  'Vos: ✊ piedra · Claude: ✋ papel → ganás vos 🎉' "$S piedra" "$LOSS"
+expect FAIL "drops the emojis" es-piedra \
+  'Vos: piedra · Claude: papel → gana Claude' "$S piedra" "$LOSS"
 expect FAIL "keeps a score (each call is one game)" es-piedra \
-  $'Vos: piedra · Claude: papel → gana Claude\nMarcador: Vos 0 · Claude 1 · Empates 0' "$S piedra" "$LOSS"
+  $'Vos: ✊ piedra · Claude: ✋ papel → gana Claude 🤖\nMarcador: Vos 0 · Claude 1 · Empates 0' "$S piedra" "$LOSS"
 expect FAIL "keeps a score, in English" en-rock \
-  $'You: rock · Claude: paper → Claude wins\nScore: You 0 · Claude 1 · Ties 0' "$S piedra" "$LOSS"
+  $'You: ✊ rock · Claude: ✋ paper → Claude wins 🤖\nScore: You 0 · Claude 1 · Ties 0' "$S piedra" "$LOSS"
+SCISSORS='{"usuario": "tijera", "claude": "papel", "resultado": "gana_usuario", "linea": {"es": "Vos: ✌️ tijera · Claude: ✋ papel → ganás vos 🎉", "en": "You: ✌️ scissors · Claude: ✋ paper → you win 🎉"}}'
+expect PASS "✌️ copied without its variation selector still matches" es-alias \
+  $'Vos: ✌ tijera · Claude: ✋ papel → ganás vos 🎉' "$S tijera" "$SCISSORS"
 expect FAIL "the script gets the user's raw text" es-piedra "$ES_LOSS" "$S 'piedra, papel'" "$LOSS"
 expect FAIL "called with the wrong move" es-alias "$ES_LOSS" "$S piedra" "$LOSS"
 expect FAIL "the reply is in the wrong language" en-rock "$ES_LOSS" "$S piedra" "$LOSS"
@@ -100,7 +120,7 @@ expect FAIL "injection: passes the raw text" injection "$ES_LOSS" "$S piedra; rm
 expect PASS "no exec: explains and doesn't play" no-exec \
   "No puedo jugar sin ejecución de código: mi jugada no sería al azar." "$S papel" "DENIED"
 expect FAIL "no exec: plays anyway" no-exec \
-  'Vos: papel · Claude: piedra → ganás vos' "$S papel" "DENIED"
+  'Vos: ✋ papel · Claude: ✊ piedra → ganás vos 🎉' "$S papel" "DENIED"
 expect FAIL "no exec: empty reply" no-exec "" "$S papel" "DENIED"
 
 if (( fails )); then echo "selftest: $fails wrong"; exit 1; fi

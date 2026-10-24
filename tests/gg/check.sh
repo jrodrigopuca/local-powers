@@ -5,9 +5,9 @@
 #
 # A played round passes when: the script ran exactly once, as
 # `python3 <path>/jugada.py <piedra|papel|tijera>` with the expected move and
-# nothing else on the line; the reply's round line reports the same moves and
-# outcome the script returned; and there is no score line (each call is one
-# complete game, nothing is carried over).
+# nothing else on the line; the reply's round line is exactly the line the
+# script wrote for the reply's language (linea.es / linea.en); and there is no
+# score line (each call is one complete game, nothing is carried over).
 # A case that must not be played passes when no round was reported (and, for
 # "none", the script never ran) and the reply is not empty.
 set -euo pipefail
@@ -58,20 +58,17 @@ def outcome(i):
         return None
     return r if "claude" in r else None
 
-# --- what the reply reports
-EN = {"piedra": "rock", "papel": "paper", "tijera": "scissors"}
-word = (lambda m: EN[m]) if lang == "en" else (lambda m: m)
-if lang == "en":
-    round_re = re.compile(r"^You: (\w+) · Claude: (\w+) → (.+)$")
-    score_re = re.compile(r"^Score\b", re.I)
-    said = {"gana_usuario": "you win", "gana_claude": "Claude wins", "empate": "tie"}
-else:
-    round_re = re.compile(r"^Vos: (\w+) · Claude: (\w+) → (.+)$")
-    score_re = re.compile(r"^Marcador\b", re.I)
-    said = {"gana_usuario": "ganás vos", "gana_claude": "gana Claude", "empate": "empate"}
-lines = [l.strip() for l in text.splitlines()]
-rounds = [m for l in lines if (m := round_re.match(l))]
-scores = [m for l in lines if (m := score_re.match(l))]
+# --- what the reply reports. The script writes the line (linea.es / linea.en);
+# Claude must copy it exactly. U+FE0F (the emoji presentation selector in ✌️)
+# is ignored in comparisons: copying text may drop it and it renders the same.
+def same(s):
+    return s.replace("️", "").strip()
+
+round_re = re.compile(r"^(Vos|You): ")
+score_re = re.compile(r"^(Marcador|Score)\b", re.I)
+lines = [same(l) for l in text.splitlines()]
+rounds = [l for l in lines if round_re.match(l)]
+scores = [l for l in lines if score_re.match(l)]
 
 CLEAN = re.compile(r"^python3 \S*/?jugada\.py (piedra|papel|tijera)$")
 
@@ -93,13 +90,9 @@ def played(move):
     if len(rounds) != 1:
         fails.append(f"{len(rounds)} round lines in the reply (expected 1)")
         return
-    user_w, claude_w, out_w = rounds[0].groups()
-    if user_w != word(r["usuario"]):
-        fails.append(f"reply says the user played {user_w!r}, script says {word(r['usuario'])!r}")
-    if claude_w != word(r["claude"]):
-        fails.append(f"reply says Claude played {claude_w!r}, script says {word(r['claude'])!r}")
-    if out_w.strip() != said[r["resultado"]]:
-        fails.append(f"reply says {out_w.strip()!r}, script says {said[r['resultado']]!r}")
+    want = same((r.get("linea") or {}).get(lang, ""))
+    if rounds[0] != want:
+        fails.append(f"reply line {rounds[0]!r} is not the script's linea.{lang} {want!r}")
     if scores:
         fails.append("the reply keeps a score; each call is a single game")
 
