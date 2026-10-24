@@ -7,7 +7,12 @@
 # Each plugin's test folder, tests/<plugin>/, provides:
 #   make-fixtures.sh <dir>        builds one throwaway git repo per case
 #   prompt.txt                    what is asked in every case
-#   check.sh <fixture> <answer>   exits 0 when the answer passes
+#   allowed-tools                 the tools Claude may use, one per line;
+#                                 {plugin_dir} is replaced by the plugin's path
+#   check.sh <fixture> <answer>   exits 0 when the answer passes; the session's
+#                                 transcript (stream-json) is at <answer>.jsonl
+# A case can override the first two in its .git/expected/: PROMPT, and TOOLS
+# (an empty TOOLS file means no tools at all).
 #
 # Every case is one model call. The model defaults to a small one to keep runs
 # cheap; override it with CLAUDE_MODEL (an alias or a model id):
@@ -31,7 +36,6 @@ plugin_dir="$root/plugins/$plugin"
 [[ -d "$plugin_dir" && -d "$suite" ]] || { echo "unknown plugin: $plugin"; exit 2; }
 
 work="$(mktemp -d "${TMPDIR:-/tmp}/local-powers-$plugin.XXXXXX")"
-prompt="$(cat "$suite/prompt.txt")"
 echo "Work dir: $work"
 
 cleanup() {
@@ -43,26 +47,41 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Writes the answer text to $2 and "<model>\t<new in>\t<cached in>\t<out>\t<cost>" to $2.meta.
+# Writes the answer text to $2, the transcript to $2.jsonl, and
+# "<model>\t<new in>\t<cached in>\t<out>\t<cost>" to $2.meta.
 run_claude() { # $1 fixture, $2 answer file
   local model_flag=(); [[ "$claude_model" == default ]] || model_flag=(--model "$claude_model")
+  local prompt tools_file tools=()
+  if [[ -f "$1/.git/expected/PROMPT" ]]; then prompt="$(cat "$1/.git/expected/PROMPT")"
+  else prompt="$(cat "$suite/prompt.txt")"; fi
+  tools_file="$suite/allowed-tools"
+  [[ -f "$1/.git/expected/TOOLS" ]] && tools_file="$1/.git/expected/TOOLS"
+  while IFS= read -r t; do
+    [[ -n "$t" ]] && tools+=("${t//\{plugin_dir\}/$plugin_dir}")
+  done < "$tools_file"
   # Isolated from the user's setup: no user/project/local settings (their skills,
   # agents, hooks), no MCP servers, no saved session; per-machine sections (cwd,
   # git status) move out of the system prompt so cases share its cache.
   # (--safe-mode is not usable: it also disables --plugin-dir skills.)
-  (cd "$1" && claude -p "$prompt" --plugin-dir "$plugin_dir" "${model_flag[@]}" \
+  local tool_flag=(); [[ ${#tools[@]} -gt 0 ]] && tool_flag=(--allowedTools "${tools[@]}")
+  # ${a[@]+"${a[@]}"}: expands an empty array to nothing under set -u on bash 3.2 (macOS)
+  (cd "$1" && claude -p "$prompt" --plugin-dir "$plugin_dir" ${model_flag[@]+"${model_flag[@]}"} \
     --setting-sources "" --strict-mcp-config --no-session-persistence \
     --exclude-dynamic-system-prompt-sections \
-    --allowedTools "Bash(git diff:*)" "Bash(git status:*)" "Bash(git log:*)" "Read" \
-    --output-format json < /dev/null > "$2.json" 2> "$2.err") || true
-  python3 -I - "$2.json" "$2" <<'PY'
+    ${tool_flag[@]+"${tool_flag[@]}"} \
+    --output-format stream-json --verbose < /dev/null > "$2.jsonl" 2> "$2.err") || true
+  python3 -I - "$2.jsonl" "$2" <<'PY'
 import json, sys
 src, answer = sys.argv[1], sys.argv[2]
-try:
-    r = json.load(open(src))
-except ValueError:
-    r = {}
-open(answer, "w").write(r.get("result", ""))
+r = {}
+for line in open(src):
+    try:
+        e = json.loads(line)
+    except ValueError:
+        continue
+    if e.get("type") == "result":
+        r = e
+open(answer, "w").write(r.get("result") or "")
 u = r.get("usage", {})
 fresh = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
 cached = u.get("cache_read_input_tokens", 0)

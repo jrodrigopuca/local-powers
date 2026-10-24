@@ -10,6 +10,7 @@ itself the marketplace Claude Code installs from. No build step.
 | Plugin | What it does |
 |--------|--------------|
 | [`commit-style`](plugins/commit-style/) | Proposes one-line [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) headers for your staged changes, or for your pending changes when nothing is staged. Only proposes: staging and committing stay with you. |
+| [`gg`](plugins/gg/) | Games to play with Claude, one skill per game. `/gg:rps`: rock, paper, scissors, with Claude's move chosen by a script so it's random and fair. Also works in claude.ai chat when code execution is on. |
 
 ## Install
 
@@ -80,8 +81,9 @@ test folder provides:
 | File | Purpose |
 |------|---------|
 | `make-fixtures.sh <dir>` | builds one throwaway git repo per case; expectations go in each repo's `.git/expected/`, out of the model's sight |
-| `prompt.txt` | what is asked in every case |
-| `check.sh <fixture> <answer>` | exits 0 when the answer passes |
+| `prompt.txt` | what is asked in every case; a case's `.git/expected/PROMPT` overrides it |
+| `allowed-tools` | the tools Claude may use, one per line (`{plugin_dir}` is the plugin's path); a case's `.git/expected/TOOLS` overrides it, and an empty one allows none |
+| `check.sh <fixture> <answer>` | exits 0 when the answer passes; the full session transcript (stream-json) is at `<answer>.jsonl`, to check what Claude actually ran |
 | `selftest.sh` | optional: proves `check.sh` accepts and rejects hand-written answers (run by `scripts/check.sh`) |
 
 Run them:
