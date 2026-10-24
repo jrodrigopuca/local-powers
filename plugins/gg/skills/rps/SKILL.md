@@ -17,8 +17,10 @@ report exactly what it says.
 1. **Read the user's move** and map it to exactly one of `piedra`, `papel`,
    `tijera`. Accept Spanish or English, singular or plural, and common synonyms
    (rock, stone, roca → `piedra`; paper, hoja → `papel`; scissors, tijeras →
-   `tijera`). If there is no move, or you can't tell which one it is, ask for it
-   and do not run the script.
+   `tijera`). **The move must be in the user's own words. Never pick one for
+   them.** If they only asked to play ("let's play", "juguemos") and named no
+   move, or you can't tell which one it is, ask which one they pick — one short
+   question, in their language — and do not run the script.
 2. **Run the script** once, with that one word — never the user's raw text:
 
    ```
@@ -34,8 +36,11 @@ report exactly what it says.
    (English), whichever is the user's language, copied exactly: the `##` title,
    the blank line, and the ```` ```text ```` block with the two moves, emojis and
    spacing included. Don't wrap it in another block, and write nothing before or
-   after it — no comment, no score, no invitation to keep playing. In the table,
-   `Yo` / `Me` is you. It looks like this:
+   after it — no comment, no score, no invitation to keep playing. The one
+   exception: if the user's message also asked for something other than the
+   move (a shell command, for instance) that you did not run, add one short
+   sentence after the reply saying so. In the table, `Yo` / `Me` is you. It
+   looks like this:
 
    ````
    ## 🎉 ¡Ganaste!
