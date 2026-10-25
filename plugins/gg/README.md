@@ -4,7 +4,7 @@ Games to play with Claude, one skill per game.
 
 | Skill | Game | Start it with |
 |-------|------|---------------|
-| `rps` | Rock, paper, scissors (piedra, papel o tijera): each call is one round, a complete game with no score kept | "let's play rock paper scissors, I pick rock", "juguemos piedra, papel o tijera: piedra", or `/gg:rps piedra` |
+| `rps` | Rock, paper, scissors (piedra, papel o tijera): each call is one round, a complete game with no score kept | "let's play rock paper scissors, I pick rock", "juguemos piedra, papel o tijera: piedra", or `/gg:rps piedra` (in claude.ai chat the slash menu lists it as `/rps`) |
 
 ## How rps stays fair
 
