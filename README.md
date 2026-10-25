@@ -10,7 +10,7 @@ itself the marketplace Claude Code installs from. No build step.
 | Plugin | What it does |
 |--------|--------------|
 | [`commit-style`](plugins/commit-style/) | Proposes one-line [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) headers for your staged changes, or for your pending changes when nothing is staged. Only proposes: staging and committing stay with you. |
-| [`gg`](plugins/gg/) | Games to play with Claude, one skill per game. `/gg:rps`: rock, paper, scissors, with Claude's move chosen by a script so it's random and fair. Also works in claude.ai chat when code execution is on. |
+| [`gg`](plugins/gg/) | Games to play with Claude, one skill per game: `/gg:rps` (rock, paper, scissors) and `/gg:b21` (a hand of blackjack). A script does the shuffling, the choosing and the rules, so the games are random and fair; Claude only copies the result. Also works in claude.ai chat when code execution is on. |
 
 ## Install
 

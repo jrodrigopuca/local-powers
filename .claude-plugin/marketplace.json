@@ -13,7 +13,7 @@
     {
       "name": "gg",
       "source": "./plugins/gg",
-      "description": "Games to play with Claude, one skill per game; starts with rock, paper, scissors"
+      "description": "Games to play with Claude, one skill per game: rock, paper, scissors and blackjack"
     }
   ]
 }
