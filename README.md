@@ -86,11 +86,19 @@ test folder provides:
 | `check.sh <fixture> <answer>` | exits 0 when the answer passes; the full session transcript (stream-json) is at `<answer>.jsonl`, to check what Claude actually ran |
 | `selftest.sh` | optional: proves `check.sh` accepts and rejects hand-written answers (run by `scripts/check.sh`) |
 
+A plugin with several skills (like `gg`, one game per skill) keeps each skill's
+tests in `tests/<plugin>/<skill>/`, with the same files. The plugin's own
+`make-fixtures.sh`, `check.sh` and `selftest.sh` just dispatch to them: the
+fixtures are named `<skill>-<case>` and `.git/expected/GAME` says which checker
+applies.
+
 Run them:
 
 ```
 tests/run.sh commit-style               # every case
 tests/run.sh commit-style no-changes    # one case
+tests/run.sh gg rps                     # every case whose name starts with rps-
+tests/run.sh gg rps-no-move             # one case
 ```
 
 - **Model:** `haiku` by default to keep runs cheap. Override with

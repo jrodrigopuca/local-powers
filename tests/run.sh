@@ -2,7 +2,7 @@
 # Runs a plugin's test cases through Claude Code.
 #
 # Usage: tests/run.sh <plugin> [case]
-#   case (a fixture name) runs only that case.
+#   case (a fixture name, or the prefix of several) runs only those cases.
 #
 # Each plugin's test folder, tests/<plugin>/, provides:
 #   make-fixtures.sh <dir>        builds one throwaway git repo per case
@@ -96,8 +96,9 @@ fixtures="$work/claude/fixtures"
 answers="$work/claude/answers"
 "$suite/make-fixtures.sh" "$fixtures" >/dev/null
 if [[ -n "$only" ]]; then
-  [[ -d "$fixtures/$only" ]] || { echo "unknown case: $only"; exit 2; }
-  find "$fixtures" -mindepth 1 -maxdepth 1 ! -name "$only" -exec rm -rf {} +
+  # A case name, or the prefix of several: "rps" keeps every rps-… case.
+  find "$fixtures" -mindepth 1 -maxdepth 1 ! \( -name "$only" -o -name "$only-*" \) -exec rm -rf {} +
+  [[ -n "$(ls -A "$fixtures")" ]] || { echo "unknown case: $only"; exit 2; }
 fi
 mkdir -p "$answers"
 
